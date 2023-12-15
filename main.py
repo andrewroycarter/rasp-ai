@@ -14,8 +14,9 @@ client = OpenAI()
 
 def take_photo():
     picam2 = Picamera2()
-    picam2.start_and_capture_file("image.jpg")
-
+    print("Taking photo")
+    picam2.start_and_capture_file("image.jpg", show_preview=False)
+    print("Photo taken")
     # Load the data from test.jpg as base64 encoded data
     base64_photo_data = base64.b64encode(open("image.jpg", "rb").read())
 
