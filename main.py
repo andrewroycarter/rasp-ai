@@ -37,7 +37,7 @@ def take_photo():
 
     response = client.chat.completions.create(
         messages=conversation_history,
-        model="gpt-3.5-turbo",
+        model="gpt-4-vision-preview",
         functions=[
             {
                 "name": "take_photo",
@@ -68,7 +68,7 @@ def send_to_openai(prompt_text):
     # Also defines a function called capture_photo to send to GPT
     response = client.chat.completions.create(
         messages=conversation_history,
-        model="gpt-3.5-turbo",
+        model="gpt-4-vision-preview",
         functions=[
             {
                 "name": "take_photo",
@@ -88,6 +88,8 @@ def process_response(response):
         if message.function_call.name == "take_photo":
             take_photo()
             return
+    else:
+        print(message.text)
 
 
 def check_for_button_press():
