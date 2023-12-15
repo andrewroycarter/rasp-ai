@@ -14,15 +14,22 @@ camera = PiCamera()
 
 
 def take_photo():
-    # Implement your local function logic here
     print("Taking a photo...")
     stream = io.BytesIO()
+    print("start")
     camera.start_preview()
     # Camera warm-up time
+    print("sleep")
     time.sleep(2)
+    print("capture")
     camera.capture(stream, format="jpeg")
+    print("seek")
     stream.seek(0)
+    print("stop")
+    camera.stop_preview()
+    print("read")
     photo_data = stream.read()
+    print("encode")
     base64_photo_data = base64.b64encode(photo_data)
 
     global conversation_history
