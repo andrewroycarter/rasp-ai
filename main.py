@@ -19,8 +19,8 @@ def take_photo():
     base64_photo_data = base64.b64encode(open("image.jpeg", "rb").read())
     print(base64_photo_data)
     global conversation_history
-
-    conversation_history.append(
+    test = []
+    test.append(
         {
             "role": "user",
             "content": [
@@ -33,7 +33,7 @@ def take_photo():
     )
 
     response = client.chat.completions.create(
-        messages=conversation_history, model="gpt-4-vision-preview"
+        messages=test, model="gpt-4-vision-preview"
     )
 
     return response
