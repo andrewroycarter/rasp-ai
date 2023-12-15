@@ -24,8 +24,7 @@ def take_photo():
 
     conversation_history.append(
         {
-            "role": "function",
-            "name": "take_photo",
+            "role": "user",
             "content": [
                 {
                     "type": "image_url",
