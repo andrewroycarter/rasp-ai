@@ -1,7 +1,7 @@
 import sys
 import time
 import io
-from picamera import PiCamera
+from picamera2 import Picamera2, Preview
 from openai import OpenAI
 import base64
 
@@ -10,27 +10,14 @@ import base64
 conversation_history = []
 
 client = OpenAI()
-camera = PiCamera()
 
 
 def take_photo():
-    print("Taking a photo...")
-    stream = io.BytesIO()
-    print("start")
-    camera.start_preview()
-    # Camera warm-up time
-    print("sleep")
-    time.sleep(2)
-    print("capture")
-    camera.capture(stream, format="jpeg")
-    print("seek")
-    stream.seek(0)
-    print("stop")
-    camera.stop_preview()
-    print("read")
-    photo_data = stream.read()
-    print("encode")
-    base64_photo_data = base64.b64encode(photo_data)
+    picam2 = Picamera2()
+    picam2.start_and_capture_file("image.jpg")
+
+    # Load the data from test.jpg as base64 encoded data
+    base64_photo_data = base64.b64encode(open("image.jpg", "rb").read())
 
     global conversation_history
 
@@ -116,6 +103,7 @@ def check_for_button_press():
 def main():
     # while True:
     # if check_for_button_press():
+    print("this is a test")
     prompt_text = "What is it that I am looking at right now?"
     response = send_to_openai(prompt_text)
     process_response(response)
