@@ -1,11 +1,63 @@
 import sys
 import time
+import io
+from picamera import PiCamera
 from openai import OpenAI
+import base64
 
 # Placeholder for importing necessary modules for button press, audio recording, and text-to-speech
 
-client = OpenAI()
 conversation_history = []
+
+client = OpenAI()
+camera = PiCamera()
+
+
+def take_photo():
+    # Implement your local function logic here
+    print("Taking a photo...")
+    stream = io.BytesIO()
+    camera.start_preview()
+    # Camera warm-up time
+    time.sleep(2)
+    camera.capture(stream, format="jpeg")
+    stream.seek(0)
+    photo_data = stream.read()
+    base64_photo_data = base64.b64encode(photo_data)
+
+    global conversation_history
+
+    conversation_history.append(
+        {
+            "role": "function",
+            "name": "take_photo",
+            "content": [
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{base64_photo_data}"},
+                }
+            ],
+        }
+    )
+
+    response = client.chat.completions.create(
+        messages=conversation_history,
+        model="gpt-3.5-turbo",
+        functions=[
+            {
+                "name": "take_photo",
+                "description": "Captures and returns a photo of what the user is looking at.",
+                "parameters": {"type": "object", "properties": {}},
+            }
+        ],
+    )
+    return response
+
+
+def send_photo_to_openai(photo_data):
+    # Code to send the captured photo data back to OpenAI
+    # You might need to encode the photo data and set up a proper structure to send it
+    pass
 
 
 def capture_audio():
@@ -18,19 +70,34 @@ def send_to_openai(prompt_text):
     global conversation_history
     conversation_history.append({"role": "user", "content": prompt_text})
 
+    # Also defines a function called capture_photo to send to GPT
     response = client.chat.completions.create(
         messages=conversation_history,
         model="gpt-3.5-turbo",
-        # Other parameters as needed
+        functions=[
+            {
+                "name": "take_photo",
+                "description": "Captures and returns a photo of what the user is looking at.",
+                "parameters": {"type": "object", "properties": {}},
+            }
+        ],
     )
     return response
 
 
+def take_photo():
+    # Implement your local function logic here
+    print("Taking a photo...")
+
+
 def process_response(response):
-    # Process the response from OpenAI
-    # If there are function calls, handle them
-    # Otherwise, speak the text back to the user
-    pass
+    # Process the response to check for a take_photo function call
+    choice = response.choices[0]
+    message = choice.message
+    if message.function_call:
+        if message.function_call.name == "take_photo":
+            take_photo()
+            return
 
 
 def check_for_button_press():
@@ -40,12 +107,14 @@ def check_for_button_press():
 
 
 def main():
-    while True:
-        if check_for_button_press():
-            prompt_text = capture_audio()
-            response = send_to_openai(prompt_text)
-            process_response(response)
-        time.sleep(0.1)  # Sleep to prevent high CPU usage
+    # while True:
+    # if check_for_button_press():
+    prompt_text = "What is it that I am looking at right now?"
+    response = send_to_openai(prompt_text)
+    process_response(response)
+
+
+# time.sleep(0.1)  # Sleep to prevent high CPU usage
 
 
 if __name__ == "__main__":
