@@ -17,23 +17,26 @@ def take_photo():
     picam2.start_and_capture_file("image.jpeg", show_preview=False)
 
     base64_photo_data = base64.b64encode(open("image.jpeg", "rb").read())
-    print(base64_photo_data)
+
     global conversation_history
-    test = []
-    test.append(
+
+    conversation_history.append(
         {
             "role": "user",
             "content": [
                 {
                     "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{base64_photo_data}"},
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{base64_photo_data}",
+                        "detail": "high",
+                    },
                 }
             ],
         }
     )
 
     response = client.chat.completions.create(
-        messages=test, model="gpt-4-vision-preview"
+        messages=conversation_history, model="gpt-4-vision-preview"
     )
 
     return response
