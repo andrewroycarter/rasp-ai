@@ -79,11 +79,6 @@ def send_to_openai(prompt_text):
     return response
 
 
-def take_photo():
-    # Implement your local function logic here
-    print("Taking a photo...")
-
-
 def process_response(response):
     # Process the response to check for a take_photo function call
     choice = response.choices[0]
@@ -103,7 +98,6 @@ def check_for_button_press():
 def main():
     # while True:
     # if check_for_button_press():
-    print("this is a test")
     prompt_text = "What is it that I am looking at right now?"
     response = send_to_openai(prompt_text)
     process_response(response)
