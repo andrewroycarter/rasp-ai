@@ -35,16 +35,9 @@ def take_photo():
     )
 
     response = client.chat.completions.create(
-        messages=conversation_history,
-        model="gpt-4-vision-preview",
-        functions=[
-            {
-                "name": "take_photo",
-                "description": "Captures and returns a photo of what the user is looking at.",
-                "parameters": {"type": "object", "properties": {}},
-            }
-        ],
+        messages=conversation_history, model="gpt-4-vision-preview"
     )
+
     return response
 
 
@@ -67,7 +60,7 @@ def send_to_openai(prompt_text):
     # Also defines a function called capture_photo to send to GPT
     response = client.chat.completions.create(
         messages=conversation_history,
-        model="gpt-4-vision-preview",
+        model="gpt-4-1106-preview",
         functions=[
             {
                 "name": "take_photo",
