@@ -38,7 +38,9 @@ def take_photo():
     )
 
     response = client.chat.completions.create(
-        messages=conversation_history, model="gpt-4-vision-preview"
+        messages=conversation_history,
+        model="gpt-4-vision-preview",
+        max_tokens=4000,
     )
 
     return response
@@ -71,6 +73,7 @@ def send_to_openai(prompt_text):
                 "parameters": {"type": "object", "properties": {}},
             }
         ],
+        max_tokens=4000,
     )
     return response
 
