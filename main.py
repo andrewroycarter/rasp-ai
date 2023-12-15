@@ -85,7 +85,7 @@ def process_response(response):
             process_response(response)
             return
     else:
-        print(message.text)
+        print(message)
 
 
 def check_for_button_press():
