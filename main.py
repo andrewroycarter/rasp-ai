@@ -97,7 +97,7 @@ def check_for_button_press():
 def main():
     # while True:
     # if check_for_button_press():
-    prompt_text = "What is it that I am looking at right now?"
+    prompt_text = "Describe what I am looking at right now please."
     response = send_to_openai(prompt_text)
     process_response(response)
 
