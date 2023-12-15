@@ -15,10 +15,10 @@ client = OpenAI()
 def take_photo():
     picam2 = Picamera2()
     print("Taking photo")
-    picam2.start_and_capture_file("image.jpg", show_preview=False)
+    picam2.start_and_capture_file("image.jpeg", show_preview=False, format="jpeg")
     print("Photo taken")
-    # Load the data from test.jpg as base64 encoded data
-    base64_photo_data = base64.b64encode(open("image.jpg", "rb").read())
+
+    base64_photo_data = base64.b64encode(open("image.jpeg", "rb").read())
 
     global conversation_history
 
