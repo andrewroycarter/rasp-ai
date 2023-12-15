@@ -16,7 +16,9 @@ def take_photo():
     picam2 = Picamera2()
     picam2.start_and_capture_file("image.jpeg", show_preview=False)
 
-    base64_photo_data = base64.b64encode(open("image.jpeg", "rb").read())
+    base64_photo_data = base64.b64encode(open("image.jpeg", "rb").read()).decode(
+        "utf-8"
+    )
 
     global conversation_history
 
