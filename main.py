@@ -81,7 +81,8 @@ def process_response(response):
     message = choice.message
     if message.function_call:
         if message.function_call.name == "take_photo":
-            take_photo()
+            response = take_photo()
+            process_response(response)
             return
     else:
         print(message.text)
