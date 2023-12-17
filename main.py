@@ -1,25 +1,88 @@
 import sys
 import time
 import io
-from picamera2 import Picamera2, Preview
+import os
+
+try:
+    from picamera2 import Picamera2, Preview
+except ImportError:
+    print(
+        "Failed to import picamera2. Please install it with `pip3 install picamera2`."
+    )
+
 from openai import OpenAI
 import base64
 
-# Placeholder for importing necessary modules for button press, audio recording, and text-to-speech
 
-conversation_history = []
+class HardwareInterface:
+    def take_photo(self):
+        pass
+
+    def capture_user_input(self):
+        pass
+
+
+class SimulatedHardware(HardwareInterface):
+    def take_photo(self):
+        # Ask the user for input to a file path for a photo
+        path = input("Enter a file path for a photo: ")
+        # Ensure that the file path is valid, and a file exists at that path
+        if not os.path.exists(path):
+            print("Invalid file path.")
+            return self.take_photo()
+
+        base64_photo_data = base64.b64encode(open(path, "rb").read()).decode("utf-8")
+        return base64_photo_data
+
+    def capture_user_input(self):
+        text = input("Enter a prompt: ")
+        return text
+
+
+class RaspberryPiZeroW(HardwareInterface):
+    def take_photo(self):
+        picam2 = Picamera2()
+        picam2.start_and_capture_file("image.jpeg", show_preview=False)
+        base64_photo_data = base64.b64encode(open("image.jpeg", "rb").read()).decode(
+            "utf-8"
+        )
+        return base64_photo_data
+
+    def capture_user_input(self):
+        return "Describe what I am looking at right now please."
+
+
+conversation_history = [
+    {
+        "role": "system",
+        "content": "You are a personal assistant bot. The user is wearing a device that is connected to a camera, speakers, and a microphone. The user may ask you general questions, or questions about what they see. You will be provided with functions that will allow you to gather more information about the user.",
+    },
+]
 
 client = OpenAI()
 
 
-def take_photo():
-    picam2 = Picamera2()
-    picam2.start_and_capture_file("image.jpeg", show_preview=False)
+def send_to_openai(prompt_text):
+    global conversation_history
+    conversation_history.append({"role": "user", "content": prompt_text})
 
-    base64_photo_data = base64.b64encode(open("image.jpeg", "rb").read()).decode(
-        "utf-8"
+    # Also defines a function called capture_photo to send to GPT
+    response = client.chat.completions.create(
+        messages=conversation_history,
+        model="gpt-4-1106-preview",
+        functions=[
+            {
+                "name": "take_photo",
+                "description": "Captures and returns a photo of what the user is looking at.",
+                "parameters": {"type": "object", "properties": {}},
+            }
+        ],
+        max_tokens=4000,
     )
+    return response
 
+
+def send_photo_to_openai(base64_photo_data):
     global conversation_history
 
     conversation_history.append(
@@ -46,46 +109,15 @@ def take_photo():
     return response
 
 
-def send_photo_to_openai(photo_data):
-    # Code to send the captured photo data back to OpenAI
-    # You might need to encode the photo data and set up a proper structure to send it
-    pass
-
-
-def capture_audio():
-    # Code to capture audio
-    # Return the captured audio as text
-    pass
-
-
-def send_to_openai(prompt_text):
-    global conversation_history
-    conversation_history.append({"role": "user", "content": prompt_text})
-
-    # Also defines a function called capture_photo to send to GPT
-    response = client.chat.completions.create(
-        messages=conversation_history,
-        model="gpt-4-1106-preview",
-        functions=[
-            {
-                "name": "take_photo",
-                "description": "Captures and returns a photo of what the user is looking at.",
-                "parameters": {"type": "object", "properties": {}},
-            }
-        ],
-        max_tokens=4000,
-    )
-    return response
-
-
-def process_response(response):
+def process_response(response, device):
     # Process the response to check for a take_photo function call
     choice = response.choices[0]
     message = choice.message
     if message.function_call:
         if message.function_call.name == "take_photo":
-            response = take_photo()
-            process_response(response)
+            photo_data = device.take_photo()
+            photo_response = send_photo_to_openai(photo_data)
+            process_response(photo_response, device)
             return
     else:
         print(message.content)
@@ -98,11 +130,12 @@ def check_for_button_press():
 
 
 def main():
-    # while True:
-    # if check_for_button_press():
-    prompt_text = "Describe what I am looking at right now please."
-    response = send_to_openai(prompt_text)
-    process_response(response)
+    device = SimulatedHardware()
+
+    while True:
+        prompt_text = device.capture_user_input()
+        response = send_to_openai(prompt_text)
+        process_response(response, device)
 
 
 # time.sleep(0.1)  # Sleep to prevent high CPU usage
@@ -114,19 +147,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"An error occurred: {e}", file=sys.stderr)
         sys.exit(1)
-
-# def main():
-#     response = client.chat.completions.create(
-#         messages=[{"role": "user", "content": "What is it that I am looking at?"}],
-#         model="gpt-3.5-turbo",
-#         tools=[
-#             {
-#                 "type": "function",
-#                 "function": {
-#                     "name": "take_photo",
-#                     "description": "Gets a photo of what the user is looking at.",
-#                     "parameters": {"type": "object", "properties": {}},
-#                 },
-#             }
-#         ],
-#     )
