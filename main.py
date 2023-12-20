@@ -89,7 +89,7 @@ def send_to_openai(prompt_text):
 def send_photo_to_openai(base64_photo_data):
     global conversation_history
 
-    conversation_history.append(
+    image_history = conversation_history + [
         {
             "role": "user",
             "content": [
@@ -100,12 +100,12 @@ def send_photo_to_openai(base64_photo_data):
                         "detail": "high",
                     },
                 }
-            ],
+            ]
         }
-    )
+    ]
 
     response = client.chat.completions.create(
-        messages=conversation_history,
+        messages=image_history,
         model="gpt-4-vision-preview",
         max_tokens=4000,
     )
@@ -135,7 +135,7 @@ def text_to_speech(text):
     os.system(f'espeak -w {wav_path} "{text}"')
 
     # Amplify the volume of the WAV file
-    os.system(f'sox {wav_path} {amplified_wav_path} vol 2.0')
+    os.system(f'sox {wav_path} {amplified_wav_path} vol 1.2')
 
     # Set volume to maximum
     os.system("amixer sset 'Master' 100%")
