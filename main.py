@@ -2,6 +2,10 @@ import sys
 import time
 import io
 import os
+import sounddevice as sd
+import speech_recognition as sr
+from gpiozero import Button
+import threading
 
 try:
     from picamera2 import Picamera2, Preview
@@ -41,6 +45,12 @@ class SimulatedHardware(HardwareInterface):
 
 
 class RaspberryPiZeroW(HardwareInterface):
+    def __init__(self):
+        self.button = Button(27)  # GPIO pin 27
+        self.recording = False
+        self.audio_data = None
+        self.button.when_pressed = self.toggle_recording
+
     def take_photo(self):
         picam2 = Picamera2()
         
@@ -56,8 +66,43 @@ class RaspberryPiZeroW(HardwareInterface):
         return base64_photo_data
 
     def capture_user_input(self):
-        text = input("Enter a prompt: ")
+        # Wait until recording is finished
+        while self.audio_data is None:
+            pass
+
+        # Convert the recorded audio to text
+        text = self.audio_to_text(self.audio_data)
+        self.audio_data = None  # Reset for the next recording
         return text
+
+    def toggle_recording(self):
+        print("Toggle Recording")
+        if not self.recording:
+            self.recording = True
+            threading.Thread(target=self.start_recording).start()
+        else:
+            self.recording = False
+
+    def start_recording(self):
+        print("Recording...")
+        frames = []
+        with sd.RawInputStream(samplerate=44100, channels=1, dtype='int16') as stream:
+            while self.recording:
+                data, overflowed = stream.read(1024)
+                frames.append(data)
+        self.audio_data = b''.join(frames)
+        print("Stopped recording")
+
+    def audio_to_text(self, audio_data):
+        recognizer = sr.Recognizer()
+        with sr.AudioData(audio_data, 44100, 2) as audio:
+            try:
+                return recognizer.recognize_google(audio)
+            except sr.UnknownValueError:
+                return "Speech Recognition could not understand audio"
+            except sr.RequestError as e:
+                return f"Could not request results from Speech Recognition service; {e}"
+
 
 conversation_history = [
     {
