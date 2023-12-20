@@ -1,20 +1,13 @@
 import sys
-import time
-import io
 import os
-import sounddevice as sd
-import speech_recognition as sr
 import subprocess
 from gpiozero import Button
-import threading
-import wave
+import speech_recognition as sr
 
 try:
-    from picamera2 import Picamera2, Preview
+    from picamera2 import Picamera2
 except ImportError:
-    print(
-        "Failed to import picamera2. Please install it with `pip3 install picamera2`."
-    )
+    print("Failed to import picamera2. Please install it with `pip3 install picamera2`.")
 
 from openai import OpenAI
 import base64
@@ -31,13 +24,10 @@ class HardwareInterface:
 
 class SimulatedHardware(HardwareInterface):
     def take_photo(self):
-        # Ask the user for input to a file path for a photo
         path = input("Enter a file path for a photo: ")
-        # Ensure that the file path is valid, and a file exists at that path
         if not os.path.exists(path):
             print("Invalid file path.")
             return self.take_photo()
-
         base64_photo_data = base64.b64encode(open(path, "rb").read()).decode("utf-8")
         return base64_photo_data
 
@@ -51,42 +41,36 @@ class RaspberryPiZeroW(HardwareInterface):
         self.button = Button(27)  # GPIO pin 27
         self.recording_process = None
         self.button.when_pressed = self.toggle_recording
+        self.audio_file_path = 'recording.wav'
 
     def take_photo(self):
         picam2 = Picamera2()
-        
-        # Define the configuration for a lower resolution
         config = picam2.create_preview_configuration()
-        config["main"]["size"] = (1280, 720)  # Set to 1280x720 resolution
-
-        # Configure the camera with the specified settings
+        config["main"]["size"] = (1280, 720)
         picam2.configure(config)
-
         picam2.start_and_capture_file("image.jpeg", show_preview=False)
         base64_photo_data = base64.b64encode(open("image.jpeg", "rb").read()).decode("utf-8")
         return base64_photo_data
 
     def capture_user_input(self):
         while self.recording_process is not None:
-            pass  # Wait for the recording to stop
-
-        # Convert the recorded audio to text
-        text = self.audio_to_text('recording.wav')
-        return text
+            pass
+        return self.audio_to_text(self.audio_file_path)
 
     def toggle_recording(self):
         if self.recording_process is None:
-            # Start recording
-            self.recording_process = subprocess.Popen(['arecord', '-D', 'plughw:1,0', '-f', 'cd', '-t', 'wav', 'recording.wav'])
+            if os.path.exists(self.audio_file_path):
+                os.remove(self.audio_file_path)
+            self.recording_process = subprocess.Popen(['arecord', '-D', 'plughw:1,0', '-f', 'cd', '-t', 'wav', self.audio_file_path])
             print("Recording started...")
+            time.sleep(0.5)  # Allow time for the recording process to start
         else:
-            # Stop recording
             self.recording_process.terminate()
             self.recording_process = None
             print("Recording stopped.")
+            time.sleep(0.5)  # Allow time for the file to be saved
 
     def audio_to_text(self, audio_file_path):
-        # Use speech_recognition to convert audio to text
         recognizer = sr.Recognizer()
         with sr.AudioFile(audio_file_path) as source:
             audio = recognizer.record(source)
@@ -108,8 +92,6 @@ conversation_history = [
 def send_to_openai(prompt_text):
     global conversation_history
     conversation_history.append({"role": "user", "content": prompt_text})
-
-    # Also defines a function called capture_photo to send to GPT
     response = client.chat.completions.create(
         messages=conversation_history,
         model="gpt-4-1106-preview",
@@ -127,7 +109,6 @@ def send_to_openai(prompt_text):
 
 def send_photo_to_openai(base64_photo_data):
     global conversation_history
-
     image_history = conversation_history + [
         {
             "role": "user",
@@ -153,7 +134,6 @@ def send_photo_to_openai(base64_photo_data):
 
 
 def process_response(response, device):
-    # Process the response to check for a take_photo function call
     choice = response.choices[0]
     message = choice.message
     if message.function_call:
@@ -169,23 +149,10 @@ def process_response(response, device):
 def text_to_speech(text):
     wav_path = "/tmp/temp_speech.wav"
     amplified_wav_path = "/tmp/temp_speech_amplified.wav"
-
-    # Generate WAV file with espeak
     os.system(f'espeak -w {wav_path} "{text}"')
-
-    # Amplify the volume of the WAV file
     os.system(f'sox {wav_path} {amplified_wav_path} vol 1.2')
-
-    # Set volume to maximum
     os.system("amixer sset 'Master' 100%")
-
-    # Play the amplified WAV file
     os.system(f'aplay {amplified_wav_path}')
-
-def check_for_button_press():
-    # Code to check if the button is pressed
-    # Return True if pressed, False otherwise
-    pass
 
 
 def main():
@@ -195,9 +162,6 @@ def main():
         prompt_text = device.capture_user_input()
         response = send_to_openai(prompt_text)
         process_response(response, device)
-
-
-# time.sleep(0.1)  # Sleep to prevent high CPU usage
 
 
 if __name__ == "__main__":
