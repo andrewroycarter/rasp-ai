@@ -4,19 +4,6 @@ import io
 import os
 
 try:
-    from gtts import gTTS
-except ImportError:
-    print(
-        "Failed to import gtts. Please install it with `pip3 install gTTS`."
-    )
-try:
-    from pygame import mixer
-except ImportError:
-    print(
-        "Failed to import pygame. Please install it with `pip3 install pygame`."
-    )
-
-try:
     from picamera2 import Picamera2, Preview
 except ImportError:
     print(
@@ -135,13 +122,9 @@ def process_response(response, device):
         print(message.content)
 
 def text_to_speech(text):
-    tts = gTTS(text)
-    tts.save("/tmp/temp_speech.mp3")
-    mixer.init()
-    mixer.music.load("/tmp/temp_speech.mp3")
-    mixer.music.play()
-    while mixer.music.get_busy():  # Wait until audio playback is done
-        pass
+    wav_path = "/tmp/temp_speech.wav"
+    os.system(f'espeak -w {wav_path} "{text}"')
+    os.system(f'aplay {wav_path}')
 
 def check_for_button_press():
     # Code to check if the button is pressed
