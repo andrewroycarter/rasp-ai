@@ -6,6 +6,7 @@ import sounddevice as sd
 import speech_recognition as sr
 from gpiozero import Button
 import threading
+import wave
 
 try:
     from picamera2 import Picamera2, Preview
@@ -76,7 +77,6 @@ class RaspberryPiZeroW(HardwareInterface):
         return text
 
     def toggle_recording(self):
-        print("Toggle Recording")
         if not self.recording:
             self.recording = True
             threading.Thread(target=self.start_recording).start()
@@ -91,11 +91,20 @@ class RaspberryPiZeroW(HardwareInterface):
                 data, overflowed = stream.read(1024)
                 frames.append(data)
         self.audio_data = b''.join(frames)
+        self.save_wav("recording.wav", self.audio_data)
         print("Stopped recording")
+
+    def save_wav(self, filename, audio_data):
+        with wave.open(filename, 'wb') as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(44100)
+            wf.writeframes(audio_data)
 
     def audio_to_text(self, audio_data):
         recognizer = sr.Recognizer()
-        with sr.AudioData(audio_data, 44100, 2) as audio:
+        with sr.AudioFile("recording.wav") as source:
+            audio = recognizer.record(source)
             try:
                 return recognizer.recognize_google(audio)
             except sr.UnknownValueError:
