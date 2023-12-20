@@ -83,17 +83,17 @@ class RaspberryPiZeroW(HardwareInterface):
         else:
             self.recording = False
 
-def start_recording(self):
-    print("Recording...")
-    frames = []
-    device_info = sd.query_devices(kind='input')
-    with sd.RawInputStream(samplerate=44100, channels=2, dtype='int16', device='plughw:1,0') as stream:
-        while self.recording:
-            data, overflowed = stream.read(1024)
-            frames.append(data)
-    self.audio_data = b''.join(frames)
-    self.save_wav("/tmp/recording.wav", self.audio_data)
-    print("Stopped recording")
+    def start_recording(self):
+        print("Recording...")
+        frames = []
+        device_info = sd.query_devices(kind='input')
+        with sd.RawInputStream(samplerate=44100, channels=2, dtype='int16', device='plughw:1,0') as stream:
+            while self.recording:
+                data, overflowed = stream.read(1024)
+                frames.append(data)
+        self.audio_data = b''.join(frames)
+        self.save_wav("/tmp/recording.wav", self.audio_data)
+        print("Stopped recording")
 
     def save_wav(self, filename, audio_data):
         with wave.open(filename, 'wb') as wf:
@@ -206,7 +206,7 @@ def check_for_button_press():
 
 def main():
     device = RaspberryPiZeroW()
-
+    print("Ready")
     while True:
         prompt_text = device.capture_user_input()
         response = send_to_openai(prompt_text)
