@@ -129,8 +129,19 @@ def process_response(response, device):
 
 def text_to_speech(text):
     wav_path = "/tmp/temp_speech.wav"
+    amplified_wav_path = "/tmp/temp_speech_amplified.wav"
+
+    # Generate WAV file with espeak
     os.system(f'espeak -w {wav_path} "{text}"')
-    os.system(f'aplay {wav_path}')
+
+    # Amplify the volume of the WAV file
+    os.system(f'sox {wav_path} {amplified_wav_path} vol 2.0')
+
+    # Set volume to maximum
+    os.system("amixer sset 'Master' 100%")
+
+    # Play the amplified WAV file
+    os.system(f'aplay {amplified_wav_path}')
 
 def check_for_button_press():
     # Code to check if the button is pressed
