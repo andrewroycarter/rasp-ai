@@ -3,6 +3,7 @@ import os
 import subprocess
 from gpiozero import Button
 import speech_recognition as sr
+import time
 
 try:
     from picamera2 import Picamera2
@@ -40,6 +41,7 @@ class RaspberryPiZeroW(HardwareInterface):
     def __init__(self):
         self.button = Button(27)  # GPIO pin 27
         self.recording_process = None
+        self.is_recording = False
         self.button.when_pressed = self.toggle_recording
         self.audio_file_path = 'recording.wav'
 
@@ -53,8 +55,8 @@ class RaspberryPiZeroW(HardwareInterface):
         return base64_photo_data
 
     def capture_user_input(self):
-        while self.recording_process is not None:
-            pass
+        while self.is_recording:  # Wait for recording to complete
+            time.sleep(0.1)  # Add a small delay to prevent high CPU usage
         return self.audio_to_text(self.audio_file_path)
 
     def toggle_recording(self):
@@ -62,15 +64,17 @@ class RaspberryPiZeroW(HardwareInterface):
             if os.path.exists(self.audio_file_path):
                 os.remove(self.audio_file_path)
             self.recording_process = subprocess.Popen(['arecord', '-D', 'plughw:1,0', '-f', 'cd', '-t', 'wav', self.audio_file_path])
+            self.is_recording = True
             print("Recording started...")
-            time.sleep(0.5)  # Allow time for the recording process to start
         else:
             self.recording_process.terminate()
             self.recording_process = None
+            self.is_recording = False
             print("Recording stopped.")
             time.sleep(0.5)  # Allow time for the file to be saved
 
     def audio_to_text(self, audio_file_path):
+        # Use speech_recognition to convert audio to text
         recognizer = sr.Recognizer()
         with sr.AudioFile(audio_file_path) as source:
             audio = recognizer.record(source)
@@ -80,7 +84,6 @@ class RaspberryPiZeroW(HardwareInterface):
                 return "Speech Recognition could not understand audio"
             except sr.RequestError as e:
                 return f"Could not request results from Speech Recognition service; {e}"
-
 
 conversation_history = [
     {
