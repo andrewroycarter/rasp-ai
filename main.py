@@ -63,8 +63,8 @@ class RaspberryPiZeroW(HardwareInterface):
         return base64_photo_data
 
     def capture_user_input(self):
-        return "Describe what I am looking at right now please."
-
+        text = input("Enter a prompt: ")
+        return text
 
 conversation_history = [
     {
