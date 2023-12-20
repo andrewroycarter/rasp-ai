@@ -43,10 +43,16 @@ class SimulatedHardware(HardwareInterface):
 class RaspberryPiZeroW(HardwareInterface):
     def take_photo(self):
         picam2 = Picamera2()
+        
+        # Define the configuration for a lower resolution
+        config = picam2.create_preview_configuration()
+        config["main"]["size"] = (1280, 720)  # Set to 1280x720 resolution
+
+        # Configure the camera with the specified settings
+        picam2.configure(config)
+
         picam2.start_and_capture_file("image.jpeg", show_preview=False)
-        base64_photo_data = base64.b64encode(open("image.jpeg", "rb").read()).decode(
-            "utf-8"
-        )
+        base64_photo_data = base64.b64encode(open("image.jpeg", "rb").read()).decode("utf-8")
         return base64_photo_data
 
     def capture_user_input(self):
