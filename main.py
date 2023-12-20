@@ -150,7 +150,7 @@ def check_for_button_press():
 
 
 def main():
-    device = HardwareInterface()
+    device = RaspberryPiZeroW()
 
     while True:
         prompt_text = device.capture_user_input()
