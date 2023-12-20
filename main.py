@@ -4,6 +4,7 @@ import io
 import os
 import sounddevice as sd
 import speech_recognition as sr
+import subprocess
 from gpiozero import Button
 import threading
 import wave
@@ -48,8 +49,7 @@ class SimulatedHardware(HardwareInterface):
 class RaspberryPiZeroW(HardwareInterface):
     def __init__(self):
         self.button = Button(27)  # GPIO pin 27
-        self.recording = False
-        self.audio_data = None
+        self.recording_process = None
         self.button.when_pressed = self.toggle_recording
 
     def take_photo(self):
@@ -67,44 +67,28 @@ class RaspberryPiZeroW(HardwareInterface):
         return base64_photo_data
 
     def capture_user_input(self):
-        # Wait until recording is finished
-        while self.audio_data is None:
-            pass
+        while self.recording_process is not None:
+            pass  # Wait for the recording to stop
 
         # Convert the recorded audio to text
-        text = self.audio_to_text(self.audio_data)
-        self.audio_data = None  # Reset for the next recording
+        text = self.audio_to_text('recording.wav')
         return text
 
     def toggle_recording(self):
-        if not self.recording:
-            self.recording = True
-            threading.Thread(target=self.start_recording).start()
+        if self.recording_process is None:
+            # Start recording
+            self.recording_process = subprocess.Popen(['arecord', '-D', 'plughw:1,0', '-f', 'cd', '-t', 'wav', 'recording.wav'])
+            print("Recording started...")
         else:
-            self.recording = False
+            # Stop recording
+            self.recording_process.terminate()
+            self.recording_process = None
+            print("Recording stopped.")
 
-    def start_recording(self):
-        print("Recording...")
-        frames = []
-        device_info = sd.query_devices(kind='input')
-        with sd.RawInputStream(samplerate=44100, channels=2, dtype='int16', device='plughw:1,0') as stream:
-            while self.recording:
-                data, overflowed = stream.read(1024)
-                frames.append(data)
-        self.audio_data = b''.join(frames)
-        self.save_wav("/tmp/recording.wav", self.audio_data)
-        print("Stopped recording")
-
-    def save_wav(self, filename, audio_data):
-        with wave.open(filename, 'wb') as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)
-            wf.setframerate(44100)
-            wf.writeframes(audio_data)
-
-    def audio_to_text(self, audio_data):
+    def audio_to_text(self, audio_file_path):
+        # Use speech_recognition to convert audio to text
         recognizer = sr.Recognizer()
-        with sr.AudioFile("recording.wav") as source:
+        with sr.AudioFile(audio_file_path) as source:
             audio = recognizer.record(source)
             try:
                 return recognizer.recognize_google(audio)
