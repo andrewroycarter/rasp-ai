@@ -4,6 +4,19 @@ import io
 import os
 
 try:
+    from gtts import gTTS
+except ImportError:
+    print(
+        "Failed to import gtts. Please install it with `pip3 install gTTS`."
+    )
+try:
+    from pygame import mixer
+except ImportError:
+    print(
+        "Failed to import pygame. Please install it with `pip3 install pygame`."
+    )
+
+try:
     from picamera2 import Picamera2, Preview
 except ImportError:
     print(
@@ -13,6 +26,7 @@ except ImportError:
 from openai import OpenAI
 import base64
 
+client = OpenAI()
 
 class HardwareInterface:
     def take_photo(self):
@@ -58,9 +72,6 @@ conversation_history = [
         "content": "You are a personal assistant bot. The user is wearing a device that is connected to a camera, speakers, and a microphone. The user may ask you general questions, or questions about what they see. You will be provided with functions that will allow you to gather more information about the user.",
     },
 ]
-
-client = OpenAI()
-
 
 def send_to_openai(prompt_text):
     global conversation_history
@@ -120,8 +131,17 @@ def process_response(response, device):
             process_response(photo_response, device)
             return
     else:
+        text_to_speech(message.content)
         print(message.content)
 
+def text_to_speech(text):
+    tts = gTTS(text)
+    tts.save("/tmp/temp_speech.mp3")
+    mixer.init()
+    mixer.music.load("/tmp/temp_speech.mp3")
+    mixer.music.play()
+    while mixer.music.get_busy():  # Wait until audio playback is done
+        pass
 
 def check_for_button_press():
     # Code to check if the button is pressed
@@ -130,7 +150,7 @@ def check_for_button_press():
 
 
 def main():
-    device = SimulatedHardware()
+    device = HardwareInterface()
 
     while True:
         prompt_text = device.capture_user_input()
