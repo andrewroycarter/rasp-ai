@@ -41,7 +41,7 @@ class RaspberryPiZeroW(HardwareInterface):
     def __init__(self):
         self.button = Button(27)  # GPIO pin 27
         self.recording_process = None
-        self.is_recording = False
+        self.has_recording = False
         self.button.when_pressed = self.toggle_recording
         self.audio_file_path = 'recording.wav'
 
@@ -55,8 +55,11 @@ class RaspberryPiZeroW(HardwareInterface):
         return base64_photo_data
 
     def capture_user_input(self):
-        while self.is_recording:  # Wait for recording to complete
+        while not self.has_recording:  # Wait for recording to complete
             time.sleep(0.1)  # Add a small delay to prevent high CPU usage
+        
+        self.has_recording = False
+
         return self.audio_to_text(self.audio_file_path)
 
     def toggle_recording(self):
@@ -64,14 +67,13 @@ class RaspberryPiZeroW(HardwareInterface):
             if os.path.exists(self.audio_file_path):
                 os.remove(self.audio_file_path)
             self.recording_process = subprocess.Popen(['arecord', '-D', 'plughw:1,0', '-f', 'cd', '-t', 'wav', self.audio_file_path])
-            self.is_recording = True
             print("Recording started...")
         else:
             self.recording_process.terminate()
             self.recording_process = None
-            self.is_recording = False
             print("Recording stopped.")
             time.sleep(0.5)  # Allow time for the file to be saved
+            self.has_recording = True
 
     def audio_to_text(self, audio_file_path):
         # Use speech_recognition to convert audio to text
