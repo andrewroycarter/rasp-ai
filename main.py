@@ -46,12 +46,14 @@ class RaspberryPiZeroW(HardwareInterface):
         self.audio_file_path = 'recording.wav'
 
     def take_photo(self):
+        text_to_speech("Let me take a photo...")
         picam2 = Picamera2()
         config = picam2.create_preview_configuration()
         config["main"]["size"] = (1280, 720)
         picam2.configure(config)
         picam2.start_and_capture_file("image.jpeg", show_preview=False)
         base64_photo_data = base64.b64encode(open("image.jpeg", "rb").read()).decode("utf-8")
+        text_to_speech("Ok, I've got a photo, let me think...")
         return base64_photo_data
 
     def capture_user_input(self):
@@ -64,6 +66,7 @@ class RaspberryPiZeroW(HardwareInterface):
 
     def toggle_recording(self):
         if self.recording_process is None:
+            text_to_speech("I'm listening...")
             if os.path.exists(self.audio_file_path):
                 os.remove(self.audio_file_path)
             self.recording_process = subprocess.Popen(['arecord', '-D', 'plughw:1,0', '-f', 'cd', '-t', 'wav', self.audio_file_path])
@@ -72,6 +75,7 @@ class RaspberryPiZeroW(HardwareInterface):
             self.recording_process.terminate()
             self.recording_process = None
             print("Recording stopped.")
+            text_to_speech("Let me think...")
             time.sleep(0.5)  # Allow time for the file to be saved
             self.has_recording = True
 
