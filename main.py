@@ -163,6 +163,7 @@ def text_to_speech(text):
 def main():
     device = RaspberryPiZeroW()
     print("Ready")
+    text_to_speech("Hello! I'm ready to help - press my button, ask your question, and press again when you're done speaking!")
     while True:
         prompt_text = device.capture_user_input()
         response = send_to_openai(prompt_text)
