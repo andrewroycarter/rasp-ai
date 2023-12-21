@@ -14,9 +14,6 @@ from openai import OpenAI
 import base64
 
 client = OpenAI()
-picam2 = Picamera2()
-config = picam2.create_preview_configuration()
-config["main"]["size"] = (1280, 720)
 
 class HardwareInterface:
     def take_photo(self):
@@ -49,6 +46,9 @@ class RaspberryPiZeroW(HardwareInterface):
         self.audio_file_path = 'recording.wav'
 
     def take_photo(self):
+        picam2 = Picamera2()
+        config = picam2.create_preview_configuration()
+        config["main"]["size"] = (1280, 720)
         picam2.configure(config)
         picam2.start_and_capture_file("image.jpeg", show_preview=False)
         base64_photo_data = base64.b64encode(open("image.jpeg", "rb").read()).decode("utf-8")
