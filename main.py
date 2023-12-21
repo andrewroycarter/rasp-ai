@@ -157,7 +157,7 @@ def text_to_speech(text):
     os.system(f'espeak -w {wav_path} "{text}"')
     os.system(f'sox {wav_path} {amplified_wav_path} vol 1.2')
     os.system("amixer sset 'Master' 100%")
-    os.system(f'aplay {amplified_wav_path}')
+    os.system(f'paplay {amplified_wav_path}')
 
 
 def main():
